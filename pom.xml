@@ -190,7 +190,20 @@
             <optional>true</optional>
         </dependency>
         
-        <!-- 
+        
+        <dependency>
+    <groupId>net.sourceforge.tess4j</groupId>
+    <artifactId>tess4j</artifactId>
+    <version>5.9.0</version>
+</dependency>
+
+<dependency>
+    <groupId>org.apache.pdfbox</groupId>
+    <artifactId>pdfbox-tools</artifactId>
+    <version>3.0.1</version>
+</dependency>
+
+		<!-- 
         ================================================================
         SPRING BOOT DEVTOOLS
         Purpose: Developer productivity tools
@@ -211,8 +224,8 @@
             <scope>runtime</scope>
             <optional>true</optional>
         </dependency>
-        
-        <!-- 
+
+		<!-- 
         ================================================================
         SPRING BOOT TEST
         Purpose: Testing framework
@@ -246,15 +259,15 @@
 		    <groupId>org.springframework.boot</groupId>
 		    <artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
-		
-		
-				<!-- JSP Support -->
+
+
+		<!-- JSP Support -->
 		<dependency>
 		    <groupId>org.apache.tomcat.embed</groupId>
 		    <artifactId>tomcat-embed-jasper</artifactId>
 		    <scope>provided</scope>
 		</dependency>
-		
+
 		<!-- JSTL (JSP Standard Tag Library) -->
 		<dependency>
 		    <groupId>jakarta.servlet.jsp.jstl</groupId>
@@ -265,7 +278,7 @@
 		    <groupId>org.glassfish.web</groupId>
 		    <artifactId>jakarta.servlet.jsp.jstl</artifactId>
 		</dependency>
-		
+
 		<!-- Bootstrap WebJars (for styling) -->
 		<dependency>
 		    <groupId>org.webjars</groupId>
@@ -278,6 +291,8 @@
 		    <artifactId>jquery</artifactId>
 		    <version>3.7.1</version>
 		</dependency>
+
+
 
 
 

@@ -177,59 +177,65 @@
 	          var checkInterval;
 	          var progressValue = 0;
 	          
-	          function checkDocumentStatus(documentId) {
-	              $.ajax({
-	                  url: '/api/documents/' + documentId + '/status',
-	                  method: 'GET',
-	                  success: function(data) {
-	                      console.log('Status:', data);
-	                      
-	                      if (data.status === 'ANALYZING') {
-	                          // Still processing
-	                          $('#statusMessage').text('AI is analyzing your document...');
-	                          $('#statusDetail').text('Mistral is processing the text');
-	                          
-	                          // Fake progress (just for UX)
-	                          progressValue = Math.min(progressValue + 5, 90);
-	                          $('#progressBar').css('width', progressValue + '%').text(progressValue + '%');
-	                          
-	                      } else if (data.status === 'ANALYZED') {
-	                          // Complete!
-	                          $('#statusMessage').text('✅ Analysis Complete!');
-	                          $('#statusDetail').text('Redirecting...');
-	                          $('#progressBar').removeClass('progress-bar-animated')
-	                                          .addClass('bg-success')
-	                                          .css('width', '100%')
-	                                          .text('100%');
-	                          
-	                          clearInterval(checkInterval);
-	                          
-	                          // Redirect to analysis page
-	                          setTimeout(function() {
-	                              window.location.href = '/analyze/' + documentId;
-	                          }, 1500);
-	                          
-	                      } else if (data.status === 'FAILED') {
-	                          // Error
-	                          $('#statusMessage').text('❌ Analysis Failed');
-	                          $('#statusDetail').text(data.error || 'An error occurred');
-	                          $('#progressBar').removeClass('progress-bar-animated')
-	                                          .addClass('bg-danger')
-	                                          .css('width', '100%')
-	                                          .text('Error');
-	                          
-	                          clearInterval(checkInterval);
-	                          
-	                          setTimeout(function() {
-	                              location.reload();
-	                          }, 3000);
-	                      }
-	                  },
-	                  error: function() {
-	                      console.error('Error checking status');
-	                  }
-	              });
-	          }
+			  function checkDocumentStatus(documentId) {
+			      $.ajax({
+			          url: '/api/documents/' + documentId + '/status',
+			          method: 'GET',
+			          success: function(data) {
+			              console.log('Status:', data);
+			              
+			              if (data.status === 'ANALYZING') {
+			                  // Still processing
+			                  $('#statusMessage').text('AI is analyzing your document...');
+			                  $('#statusDetail').text('Mistral is processing the text');
+			                  
+			                  // Fake progress (just for UX)
+			                  progressValue = Math.min(progressValue + 5, 90);
+			                  $('#progressBar').css('width', progressValue + '%').text(progressValue + '%');
+			                  
+			              } else if (data.status === 'ANALYZED') {
+			                  // Complete!
+			                  $('#statusMessage').text('✅ Analysis Complete!');
+			                  $('#statusDetail').text('Redirecting...');
+			                  $('#progressBar').removeClass('progress-bar-animated')
+			                                  .addClass('bg-success')
+			                                  .css('width', '100%')
+			                                  .text('100%');
+			                  
+			                  clearInterval(checkInterval);  // ← STOP POLLING
+			                  
+			                  // Redirect to analysis page
+			                  setTimeout(function() {
+			                      window.location.href = '/analyze/' + documentId;
+			                  }, 1500);
+			                  
+			              } else if (data.status === 'FAILED') {
+			                  // Error
+			                  $('#statusMessage').text('❌ Analysis Failed');
+			                  $('#statusDetail').text(data.error || 'An error occurred');
+			                  $('#progressBar').removeClass('progress-bar-animated')
+			                                  .addClass('bg-danger')
+			                                  .css('width', '100%')
+			                                  .text('Error');
+			                  
+			                  clearInterval(checkInterval);  // ← STOP POLLING
+			                  
+			                  setTimeout(function() {
+			                      location.reload();
+			                  }, 3000);
+			              } else {
+			                  // Unknown status - stop polling
+			                  console.log('Unknown status:', data.status);
+			                  clearInterval(checkInterval);  // ← ADD THIS
+			                  location.reload();
+			              }
+			          },
+			          error: function(xhr, status, error) {
+			              console.error('Error checking status:', error);
+			              // Don't stop polling on error - might be temporary
+			          }
+			      });
+			  }
 	          
 	          $(document).ready(function() {
 	              // Check URL for documentId parameter
