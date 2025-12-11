@@ -1,0 +1,313 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    
+    <!-- 
+    ====================================================================
+    PARENT: This tells Maven to use Spring Boot's parent POM
+    - Provides dependency management (versions)
+    - Common plugin configurations
+    - Best practices out of the box
+    ==================================================================== 
+    -->
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>3.2.1</version>
+        <relativePath/>
+    </parent>
+    
+    <!-- 
+    ====================================================================
+    PROJECT COORDINATES: Identifies your project uniquely
+    - groupId: Usually your company domain reversed (com.company)
+    - artifactId: Your project name
+    - version: Project version
+    ==================================================================== 
+    -->
+    <groupId>com.fundverifier</groupId>
+    <artifactId>fund-verifier-api</artifactId>
+    <version>1.0.0</version>
+    <name>Fund Verifier API</name>
+    <description>AI-Powered Fund Agreement Verification System - Backend</description>
+    
+    <!-- 
+    ====================================================================
+    PROPERTIES: Configuration variables
+    - Java version we're using
+    - Library versions (centralized management)
+    ==================================================================== 
+    -->
+    <properties>
+        <java.version>17</java.version>
+        <lombok.version>1.18.30</lombok.version>
+    </properties>
+    
+    <!-- 
+    ====================================================================
+    DEPENDENCIES: External libraries our project needs
+    
+    Think of dependencies as "ingredients" for your application:
+    - spring-boot-starter-web: Builds REST APIs
+    - spring-boot-starter-data-jpa: Database operations
+    - postgresql: PostgreSQL database driver
+    - lombok: Reduces boilerplate code
+    ==================================================================== 
+    -->
+    <dependencies>
+        
+        <!-- 
+        ================================================================
+        SPRING BOOT WEB STARTER
+        Purpose: Build REST APIs and web applications
+        
+        What it includes:
+        - Spring MVC (handles HTTP requests)
+        - Embedded Tomcat server (runs your app)
+        - JSON processing (Jackson)
+        - RESTful web services support
+        
+        Why we need it:
+        - To create API endpoints like /api/documents, /api/verification
+        - To handle HTTP GET, POST, PUT, DELETE requests
+        ================================================================
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        
+        <!-- 
+        ================================================================
+        SPRING DATA JPA
+        Purpose: Database operations made easy
+        
+        What it does:
+        - ORM (Object-Relational Mapping): Java objects ↔ Database tables
+        - Provides JpaRepository for CRUD operations
+        - Handles SQL queries automatically
+        
+        Why we need it:
+        - Save documents to database: documentRepository.save(document)
+        - Find documents: documentRepository.findById(id)
+        - No need to write SQL manually
+        
+        Example:
+        Instead of writing:
+          "SELECT * FROM documents WHERE id = ?"
+        You write:
+          documentRepository.findById(id)
+        ================================================================
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        
+        <!-- 
+        ================================================================
+        POSTGRESQL DRIVER
+        Purpose: Connect to PostgreSQL database
+        
+        What it does:
+        - JDBC driver for PostgreSQL
+        - Translates Java commands to PostgreSQL commands
+        
+        Why we need it:
+        - Our data (documents, users, results) is stored in PostgreSQL
+        - This driver lets Spring Boot talk to PostgreSQL
+        ================================================================
+        -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        
+        <!-- 
+        ================================================================
+        SPRING BOOT VALIDATION
+        Purpose: Validate input data
+        
+        What it does:
+        - Validates request data before processing
+        - Annotations like @NotNull, @Email, @Size
+        
+        Why we need it:
+        - Ensure email is valid format
+        - Ensure password is at least 8 characters
+        - Prevent invalid data from entering system
+        
+        Example:
+        @Email(message = "Invalid email format")
+        private String email;
+        ================================================================
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        
+        <!-- 
+        ================================================================
+        LOMBOK
+        Purpose: Reduce boilerplate code
+        
+        What it does:
+        - Auto-generates getters, setters, constructors
+        - Uses annotations like @Data, @Builder
+        
+        Why we need it:
+        Instead of writing 50 lines:
+        
+        public class User {
+            private String name;
+            private String email;
+            
+            public String getName() { return name; }
+            public void setName(String name) { this.name = name; }
+            public String getEmail() { return email; }
+            public void setEmail(String email) { this.email = email; }
+            // ... constructors, toString, equals, hashCode
+        }
+        
+        You write 3 lines:
+        
+        @Data
+        public class User {
+            private String name;
+            private String email;
+        }
+        ================================================================
+        -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <optional>true</optional>
+        </dependency>
+        
+        <!-- 
+        ================================================================
+        SPRING BOOT DEVTOOLS
+        Purpose: Developer productivity tools
+        
+        What it does:
+        - Auto-restart application when code changes
+        - Faster development cycle
+        - LiveReload support
+        
+        Why we need it:
+        - Save time during development
+        - No need to manually restart server
+        ================================================================
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+        
+        <!-- 
+        ================================================================
+        SPRING BOOT TEST
+        Purpose: Testing framework
+        
+        What it includes:
+        - JUnit 5 (testing framework)
+        - Mockito (mocking)
+        - Spring Test (integration testing)
+        
+        Why we need it:
+        - Write unit tests for services
+        - Write integration tests for APIs
+        - Ensure code quality
+        ================================================================
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
+        
+        
+        <dependency>
+		    <groupId>org.apache.pdfbox</groupId>
+		    <artifactId>pdfbox</artifactId>
+		    <version>3.0.1</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.springframework.boot</groupId>
+		    <artifactId>spring-boot-starter-webflux</artifactId>
+		</dependency>
+		
+		
+				<!-- JSP Support -->
+		<dependency>
+		    <groupId>org.apache.tomcat.embed</groupId>
+		    <artifactId>tomcat-embed-jasper</artifactId>
+		    <scope>provided</scope>
+		</dependency>
+		
+		<!-- JSTL (JSP Standard Tag Library) -->
+		<dependency>
+		    <groupId>jakarta.servlet.jsp.jstl</groupId>
+		    <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.glassfish.web</groupId>
+		    <artifactId>jakarta.servlet.jsp.jstl</artifactId>
+		</dependency>
+		
+		<!-- Bootstrap WebJars (for styling) -->
+		<dependency>
+		    <groupId>org.webjars</groupId>
+		    <artifactId>bootstrap</artifactId>
+		    <version>5.3.0</version>
+		</dependency>
+		
+		<dependency>
+		    <groupId>org.webjars</groupId>
+		    <artifactId>jquery</artifactId>
+		    <version>3.7.1</version>
+		</dependency>
+
+
+
+    </dependencies>
+    
+    <!-- 
+    ====================================================================
+    BUILD PLUGINS: Tools to build and package your application
+    
+    spring-boot-maven-plugin:
+    - Creates executable JAR file
+    - Packages all dependencies
+    - Can run with: java -jar fund-verifier-api.jar
+    ==================================================================== 
+    -->
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+    
+</project>
