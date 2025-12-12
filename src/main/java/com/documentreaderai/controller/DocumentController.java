@@ -8,7 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.documentreaderai.model.entity.Document;
 import com.documentreaderai.model.entity.Document.DocumentStatus;
-import com.documentreaderai.service.DocumentService;
+import com.documentreaderai.service.FastDocumentService;  // ← CHANGED: Using Fast service
 
 import java.util.HashMap;
 import java.util.List;
@@ -20,15 +20,21 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DocumentController {
 
-    private final DocumentService documentService;
+    // ✅ CRITICAL FIX: Use FastDocumentService instead of DocumentService
+    private final FastDocumentService documentService;  // ← CHANGED from DocumentService
 
     /**
      * Upload PDF document
      */
     @PostMapping("/upload")
     public ResponseEntity<Document> uploadDocument(@RequestParam("file") MultipartFile file) {
-        Document document = documentService.uploadDocument(file);
-        return ResponseEntity.status(HttpStatus.CREATED).body(document);
+        try {
+            Document document = documentService.uploadDocument(file);
+            return ResponseEntity.status(HttpStatus.CREATED).body(document);
+        } catch (Exception e) {
+            // Return error details
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**
@@ -78,17 +84,22 @@ public class DocumentController {
                     .body(Map.of("error", "Prompt is required"));
         }
 
-        // Start async processing
-        documentService.analyzeDocumentAsync(id, prompt);
+        try {
+            // Start async processing with Fast service
+            documentService.analyzeDocumentAsync(id, prompt);
 
-        // Return immediately with status
-        return ResponseEntity.accepted()
-                .body(Map.of(
-                    "message", "Analysis started",
-                    "documentId", id.toString(),
-                    "status", "ANALYZING",
-                    "checkStatusAt", "/api/documents/" + id
-                ));
+            // Return immediately with status
+            return ResponseEntity.accepted()
+                    .body(Map.of(
+                        "message", "Analysis started",
+                        "documentId", id.toString(),
+                        "status", "ANALYZING",
+                        "checkStatusAt", "/api/documents/" + id
+                    ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     /**
@@ -117,7 +128,7 @@ public class DocumentController {
             status.put("message", "Analysis in progress...");
         } else if (document.getStatus() == DocumentStatus.FAILED) {
             status.put("analysisComplete", false);
-            status.put("error", document.getAiAnalysis());
+            status.put("error", document.getAiAnalysis() != null ? document.getAiAnalysis() : "Analysis failed");
         }
 
         return ResponseEntity.ok(status);
@@ -128,11 +139,19 @@ public class DocumentController {
      */
     @GetMapping("/system/status")
     public ResponseEntity<Map<String, Object>> getSystemStatus() {
-        Object status = documentService.getSystemStatus();
-        
-        return ResponseEntity.ok(Map.of(
-            "status", "operational",
-            "capabilities", status
-        ));
+        try {
+            Object status = documentService.getSystemStatus();
+            
+            return ResponseEntity.ok(Map.of(
+                "status", "operational",
+                "capabilities", status
+            ));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of(
+                        "status", "error",
+                        "error", e.getMessage()
+                    ));
+        }
     }
 }
