@@ -23,10 +23,12 @@
             <a class="navbar-brand" href="/">
                 <strong>📄 Document AI Analyzer</strong>
             </a>
-            <div class="navbar-nav">
-                <a class="nav-link" href="/">Upload</a>
-                <a class="nav-link active" href="/documents">Documents</a>
-            </div>
+			<div class="navbar-nav">
+			    <a class="nav-link" href="/">Upload</a>
+			    <a class="nav-link" href="/documents">Documents</a>
+			    <a class="nav-link" href="/batch">Batch Upload</a>
+			    <a class="nav-link" href="/batch/jobs">Batch Jobs</a>
+			</div>
         </div>
     </nav>
 
@@ -62,83 +64,87 @@
             </c:when>
             <c:otherwise>
                 <div class="row">
-                    <c:forEach items="${documents}" var="doc">
-                        <div class="col-md-6 col-lg-4 mb-4">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <h5 class="card-title">
-                                        📄 ${doc.filename}
-                                    </h5>
-                                    
-                                    <p class="card-text text-muted">
-                                        <small>
-                                            <strong>Size:</strong> 
-                                            <fmt:formatNumber value="${doc.fileSize / 1024}" maxFractionDigits="2"/> KB<br>
-                                            <strong>Pages:</strong> ${doc.totalPages != null ? doc.totalPages : 'N/A'}<br>
-                                            <strong>Uploaded:</strong> 
-                                            ${doc.createdAt.toString().substring(0, 19).replace('T', ' ')}
-                                        </small>
-                                    </p>
+					<c:forEach items="${documents}" var="doc">
+					    <div class="col-md-6 col-lg-4 mb-4">
+					        <div class="card h-100">
+					            <div class="card-body">
+					                <h5 class="card-title">
+					                    📄 ${doc.filename}
+					                </h5>
+					                
+					                <p class="card-text text-muted">
+					                    <small>
+					                        <strong>Size:</strong> 
+					                        <fmt:formatNumber value="${doc.fileSize / 1024}" maxFractionDigits="2"/> KB<br>
+					                        <strong>Pages:</strong> ${doc.totalPages != null ? doc.totalPages : 'N/A'}<br>
+					                        <strong>Uploaded:</strong> 
+					                        ${doc.createdAt.toString().substring(0, 19).replace('T', ' ')}
+					                    </small>
+					                </p>
 
-                                    <!-- Status Badge -->
-                                    <c:choose>
-                                        <c:when test="${doc.status == 'ANALYZED'}">
-                                            <span class="badge bg-success status-badge">✓ Analyzed</span>
-                                        </c:when>
-                                      
-										
-										<c:when test="${doc.status == 'ANALYZING'}">
-										    <span class="badge bg-warning status-badge">⏳ Analyzing...</span>
-										    <div class="mt-2">
-										        <a href="/documents?analyzing=${doc.id}" 
-										           class="btn btn-sm btn-warning w-100">
-										            👁️ Watch Progress
-										        </a>
-										    </div>
-										</c:when>
-										
-										
-                                        <c:when test="${doc.status == 'READY'}">
-                                            <span class="badge bg-info status-badge">✓ Ready</span>
-                                        </c:when>
-                                        <c:when test="${doc.status == 'FAILED'}">
-                                            <span class="badge bg-danger status-badge">✗ Failed</span>
-                                        </c:when>
-                                        <c:otherwise>
-                                            <span class="badge bg-secondary status-badge">${doc.status}</span>
-                                        </c:otherwise>
-                                    </c:choose>
+					                <!-- Status Badge -->
+					                <c:choose>
+					                    <c:when test="${doc.status == 'ANALYZED'}">
+					                        <span class="badge bg-success status-badge">✓ Analyzed</span>
+					                    </c:when>
+					                    <c:when test="${doc.status == 'ANALYZING'}">
+					                        <span class="badge bg-warning status-badge">⏳ Analyzing...</span>
+					                        <div class="mt-2">
+					                            <a href="/documents?analyzing=${doc.id}" 
+					                               class="btn btn-sm btn-warning w-100">
+					                                👁️ Watch Progress
+					                            </a>
+					                        </div>
+					                    </c:when>
+					                    <c:when test="${doc.status == 'READY'}">
+					                        <span class="badge bg-info status-badge">✓ Ready</span>
+					                    </c:when>
+					                    <c:when test="${doc.status == 'FAILED'}">
+					                        <span class="badge bg-danger status-badge">✗ Failed</span>
+					                    </c:when>
+					                    <c:otherwise>
+					                        <span class="badge bg-secondary status-badge">${doc.status}</span>
+					                    </c:otherwise>
+					                </c:choose>
 
-                                    <!-- Actions -->
-                                    <div class="mt-3">
-                                        <c:choose>
-                                            <c:when test="${doc.status == 'ANALYZED'}">
-                                                <a href="/analyze/${doc.id}" class="btn btn-sm btn-success w-100">
-                                                    👁️ View Analysis
-                                                </a>
-                                            </c:when>
-                                            <c:when test="${doc.status == 'ANALYZING'}">
-                                                <button class="btn btn-sm btn-warning w-100" 
-                                                        onclick="location.reload()">
-                                                    🔄 Refresh Status
-                                                </button>
-                                            </c:when>
-                                            <c:when test="${doc.status == 'READY'}">
-                                                <a href="/analyze/${doc.id}" class="btn btn-sm btn-primary w-100">
-                                                    🤖 Analyze with AI
-                                                </a>
-                                            </c:when>
-                                            <c:otherwise>
-                                                <button class="btn btn-sm btn-secondary w-100" disabled>
-                                                    Processing...
-                                                </button>
-                                            </c:otherwise>
-                                        </c:choose>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </c:forEach>
+					                <!-- Actions -->
+					                <div class="mt-3">
+					                    <c:choose>
+					                        <c:when test="${doc.status == 'ANALYZED'}">
+					                            <a href="/analyze/${doc.id}" class="btn btn-sm btn-success w-100">
+					                                👁️ View Analysis
+					                            </a>
+					                            <!-- ✅ ADVANCED VIEWER BUTTON -->
+					                            <a href="/viewer/${doc.id}" class="btn btn-sm btn-info w-100 mt-2">
+					                                <i class="fas fa-eye"></i> Advanced Viewer
+					                            </a>
+					                        </c:when>
+					                        <c:when test="${doc.status == 'ANALYZING'}">
+					                            <button class="btn btn-sm btn-warning w-100" 
+					                                    onclick="location.reload()">
+					                                🔄 Refresh Status
+					                            </button>
+					                        </c:when>
+					                        <c:when test="${doc.status == 'READY'}">
+					                            <a href="/analyze/${doc.id}" class="btn btn-sm btn-primary w-100">
+					                                🤖 Analyze with AI
+					                            </a>
+					                            <!-- ✅ ADVANCED VIEWER BUTTON -->
+					                            <a href="/viewer/${doc.id}" class="btn btn-sm btn-info w-100 mt-2">
+					                                <i class="fas fa-eye"></i> Advanced Viewer
+					                            </a>
+					                        </c:when>
+					                        <c:otherwise>
+					                            <button class="btn btn-sm btn-secondary w-100" disabled>
+					                                Processing...
+					                            </button>
+					                        </c:otherwise>
+					                    </c:choose>
+					                </div>
+					            </div>
+					        </div>
+					    </div>
+					</c:forEach>
                 </div>
             </c:otherwise>
         </c:choose>

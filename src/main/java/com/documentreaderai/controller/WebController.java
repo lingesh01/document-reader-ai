@@ -1,7 +1,9 @@
 package com.documentreaderai.controller;
 
 
+import com.documentreaderai.model.entity.BatchJob;
 import com.documentreaderai.model.entity.Document;
+import com.documentreaderai.service.BatchProcessingService;
 import com.documentreaderai.service.DocumentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
@@ -19,6 +21,8 @@ public class WebController {
 	
 	  
     private final DocumentService documentService;
+    
+    private final BatchProcessingService batchProcessingService;
     
     // Home page
     @GetMapping("/")
@@ -89,6 +93,39 @@ public class WebController {
                 "Analysis failed: " + e.getMessage());
             return "redirect:/analyze/" + id;
         }
+    }
+    
+ // Add this method to WebController
+    @GetMapping("/viewer/{id}")
+    public String viewDocument(@PathVariable UUID id, Model model) {
+        Document document = documentService.getDocumentById(id);
+        
+        if (document == null) {
+            return "redirect:/documents";
+        }
+        
+        model.addAttribute("document", document);
+        return "document-viewer";
+    }
+    
+    
+    @GetMapping("/batch")
+    public String batchUploadPage() {
+        return "batch-upload";
+    }
+
+    @GetMapping("/batch/jobs")
+    public String batchJobsPage(Model model) {
+        List<BatchJob> batchJobs = batchProcessingService.getAllBatchJobs();
+        model.addAttribute("batchJobs", batchJobs);
+        return "batch-jobs";
+    }
+
+    @GetMapping("/batch/{id}")
+    public String batchJobDetailPage(@PathVariable UUID id, Model model) {
+        BatchJob batchJob = batchProcessingService.getBatchJobById(id);
+        model.addAttribute("batchJob", batchJob);
+        return "batch-detail";
     }
 
 }

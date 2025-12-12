@@ -32,9 +32,11 @@
                 <strong>📄 Document AI Analyzer</strong>
             </a>
             <div class="navbar-nav">
-                <a class="nav-link" href="/">Upload</a>
-                <a class="nav-link" href="/documents">Documents</a>
-            </div>
+			    <a class="nav-link" href="/">Upload</a>
+			    <a class="nav-link" href="/documents">Documents</a>
+			    <a class="nav-link" href="/batch">Batch Upload</a>
+			    <a class="nav-link" href="/batch/jobs">Batch Jobs</a>
+			</div>
         </div>
     </nav>
 

@@ -27,9 +27,10 @@ import java.util.UUID;
 @Slf4j
 public class DocumentService {
 
-	private final DocumentRepository documentRepository;
-	private final PdfService pdfService;
-	private final OllamaService ollamaService; // ADD THIS
+	  private final DocumentRepository documentRepository;
+	    private final EnhancedPdfService enhancedPdfService;  // ← CHANGED
+	    private final DocumentAnalysisService documentAnalysisService;  // ← NEW
+	    private final OllamaService ollamaService;
 
 	private static final String UPLOAD_DIR = "./uploads/";
 
@@ -79,37 +80,34 @@ public class DocumentService {
 	}
 
 	@Transactional
-	public void processDocument(UUID documentId) {
-		try {
-			Document document = documentRepository.findById(documentId)
-					.orElseThrow(() -> new RuntimeException("Document not found"));
+    public void processDocument(UUID documentId) {
+        try {
+            Document document = documentRepository.findById(documentId)
+                    .orElseThrow(() -> new RuntimeException("Document not found"));
 
-			document.setStatus(Document.DocumentStatus.PROCESSING);
-			documentRepository.save(document);
+            document.setStatus(DocumentStatus.PROCESSING);
+            documentRepository.save(document);
 
-			// Extract text from PDF
-			String extractedText = pdfService.extractTextFromPdf(document.getFilePath());
+            // Use ENHANCED extraction
+            String extractedText = enhancedPdfService.extractEnhancedText(document.getFilePath());
+            int pageCount = enhancedPdfService.getPageCount(document.getFilePath());
 
-			// Get page count
-			int pageCount = pdfService.getPageCount(document.getFilePath());
+            document.setExtractedText(extractedText);
+            document.setTotalPages(pageCount);
+            document.setStatus(DocumentStatus.READY);
+            documentRepository.save(document);
 
-			// Update document
-			document.setExtractedText(extractedText);
-			document.setTotalPages(pageCount);
-			document.setStatus(Document.DocumentStatus.READY);
-			documentRepository.save(document);
+            log.info("Document processed with enhanced extraction: {}", documentId);
 
-			log.info("Document processed successfully: {}", documentId);
-
-		} catch (Exception e) {
-			log.error("Error processing document: " + documentId, e);
-			Document document = documentRepository.findById(documentId).orElse(null);
-			if (document != null) {
-				document.setStatus(Document.DocumentStatus.FAILED);
-				documentRepository.save(document);
-			}
-		}
-	}
+        } catch (Exception e) {
+            log.error("Error processing document: " + documentId, e);
+            Document document = documentRepository.findById(documentId).orElse(null);
+            if (document != null) {
+                document.setStatus(DocumentStatus.FAILED);
+                documentRepository.save(document);
+            }
+        }
+    }
 
 	public Document getDocumentById(UUID id) {
 		return documentRepository.findById(id).orElse(null);
@@ -137,44 +135,29 @@ public class DocumentService {
 	@Async
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public CompletableFuture<Document> analyzeDocumentAsync(UUID documentId, String prompt) {
-	    log.info("=== ASYNC ANALYSIS STARTED ===");
-	    log.info("Thread: {}", Thread.currentThread().getName());
-	    log.info("Document ID: {}", documentId);
-	    
+		log.info("=== ASYNC ANALYSIS STARTED ===");
+		
+		
 	    try {
-	        // Get document
-	        Document document = documentRepository.findById(documentId)
-	                .orElseThrow(() -> new RuntimeException("Document not found"));
-	        
-	        log.info("Document found: {}", document.getFilename());
-	        
-	        String text = document.getExtractedText();
-	        
-	        if (text == null || text.isEmpty()) {
-	            throw new RuntimeException("No text extracted from document");
-	        }
-	        
-	        log.info("Text length: {} characters", text.length());
-	        
-	        // UPDATE STATUS TO ANALYZING
-	        log.info("Setting status to ANALYZING");
-	        document.setStatus(DocumentStatus.ANALYZING);
-	        documentRepository.saveAndFlush(document);
-	        log.info("Status saved to DB");
-	        
-	        // Call Mistral AI
-	        log.info("Calling Ollama...");
-	        String analysis = ollamaService.analyzeDocument(text, prompt);
-	        log.info("Ollama responded!");
-	        
-	        // Save analysis
-	        document.setAiAnalysis(analysis);
-	        document.setStatus(DocumentStatus.ANALYZED);
-	        documentRepository.saveAndFlush(document);
-	        
-	        log.info("=== ANALYSIS COMPLETED SUCCESSFULLY ===");
-	        
-	        return CompletableFuture.completedFuture(document);
+	    	   Document document = documentRepository.findById(documentId)
+	                    .orElseThrow(() -> new RuntimeException("Document not found"));
+	            
+	            document.setStatus(DocumentStatus.ANALYZING);
+	            documentRepository.saveAndFlush(document);
+	            
+	            // Use SPECIALIZED analysis
+	            String analysis = documentAnalysisService.analyzeFundAgreement(
+	                document.getExtractedText(), 
+	                prompt
+	            );
+	            
+	            document.setAiAnalysis(analysis);
+	            document.setStatus(DocumentStatus.ANALYZED);
+	            documentRepository.saveAndFlush(document);
+	            
+	            log.info("=== ANALYSIS COMPLETED ===");
+	            
+	            return CompletableFuture.completedFuture(document);
 	        
 	    } catch (Exception e) {
 	        log.error("=== ANALYSIS FAILED ===", e);
