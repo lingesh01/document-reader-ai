@@ -201,6 +201,12 @@
     <version>3.0.1</version>
 </dependency>
 
+
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+</dependency>
+
 		<!-- 
         ================================================================
         SPRING BOOT DEVTOOLS
