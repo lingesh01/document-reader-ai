@@ -38,10 +38,11 @@ public class MultiModelOllamaService {
     private static final int VISION_CONTEXT = 8192;
     
     // TIMEOUTS
-    private static final Duration FAST_TIMEOUT = Duration.ofSeconds(10);
-    private static final Duration POWER_TIMEOUT = Duration.ofSeconds(30);
-    private static final Duration VISION_TIMEOUT = Duration.ofSeconds(60);
-    
+ // TIMEOUTS (increased for M4 Mac)
+ // CORRECT TIMEOUTS (restore these)
+    private static final Duration FAST_TIMEOUT = Duration.ofSeconds(30);  // 30 seconds
+    private static final Duration POWER_TIMEOUT = Duration.ofSeconds(120); // 1 minute
+    private static final Duration VISION_TIMEOUT = Duration.ofSeconds(120); // 2 minutes
     // MAX TEXT LENGTHS
     private static final int MAX_FAST_CHARS = 8000;
     private static final int MAX_POWER_CHARS = 120000;  // Qwen handles 120K chars!
@@ -63,20 +64,45 @@ public class MultiModelOllamaService {
         try {
             log.info("=== MULTI-MODEL ANALYSIS STARTED ===");
             log.info("Document length: {} chars, Image-based: {}", documentText.length(), isImageBased);
-            
-            // Route to appropriate model
+
             if (isImageBased) {
                 return analyzeWithVision(documentText, userPrompt);
-            } else if (isSimpleQuery(userPrompt)) {
-                return analyzeWithFastModel(documentText, userPrompt);
-            } else {
-                return analyzeWithPowerModel(documentText, userPrompt);
             }
-            
+
+            // NEW: Always pre-scan to filter boilerplate
+            String filteredText = preScanAndFilter(documentText);
+            log.info("Filtered text length: {} chars (reduced by ~{}%)", 
+                     filteredText.length(), 
+                     ((documentText.length() - filteredText.length()) * 100 / documentText.length()));
+
+            if (isSimpleQuery(userPrompt)) {
+                return analyzeWithFastModel(filteredText, userPrompt);  // Use filtered
+            } else {
+                return analyzeWithPowerModel(filteredText, userPrompt);  // Use filtered
+            }
+
         } catch (Exception e) {
             log.error("Analysis failed", e);
             return handleAnalysisError(e);
         }
+    }
+
+    // NEW METHOD: Quick pre-scan to skip stamps/boilerplate
+    private String preScanAndFilter(String fullText) {
+        // Use fast model to identify start of actual content
+        String scanPrompt = "Scan this doc text. Identify page where actual agreement starts (after stamps). Extract only sections with: commitment, PAN, fees, lock-in, signatures. Output ONLY the filtered text (max 80K chars).";
+        String fastScanResult = callOllama(FAST_MODEL, "Quick scanner", fullText, scanPrompt, FAST_CONTEXT, 0.0, FAST_TIMEOUT);
+        
+        // Fallback: Heuristic skip first 10 pages (stamps pattern)
+        if (fastScanResult.contains("Not found") || fastScanResult.length() < 1000) {
+            String[] pages = fullText.split("<PAGE");  // Assuming <PAGE> tags
+            if (pages.length > 15) {
+                return String.join("\n", pages).substring(  // Rough skip first 10 pages
+                    fullText.indexOf("<PAGE 11>")  // Adjust based on your doc
+                );
+            }
+        }
+        return fastScanResult.length() > 80000 ? fastScanResult.substring(0, 80000) : fastScanResult;
     }
 
     /**
@@ -142,14 +168,14 @@ public class MultiModelOllamaService {
             """;
         
         String result = callOllama(
-            POWER_MODEL,
-            systemPrompt,
-            processedText,
-            userPrompt,
-            POWER_CONTEXT,
-            0.1,  // Slight creativity
-            POWER_TIMEOUT
-        );
+                POWER_MODEL,
+                systemPrompt,
+                processedText,
+                userPrompt,
+                16384,  // Reduced from 32768
+                0.05,   // Lower temp for consistency
+                Duration.ofSeconds(60)  // Halved timeout
+            );
         
         long elapsed = System.currentTimeMillis() - startTime;
         log.info("✓ Power analysis completed in {}ms ({} seconds)", elapsed, elapsed/1000);
@@ -201,28 +227,37 @@ public class MultiModelOllamaService {
             );
             
             Map<String, Object> requestBody = Map.of(
-                "model", model,
-                "prompt", fullPrompt,
-                "stream", false,
-                "options", Map.of(
-                    "num_ctx", contextSize,
-                    "temperature", temperature,
-                    "num_thread", 8,  // M4 has 10 cores
-                    "num_gpu", 1      // Use GPU acceleration
-                )
-            );
+                    "model", model,
+                    "prompt", fullPrompt,
+                    "stream", true,  // ENABLE STREAMING
+                    "options", Map.of(
+                        "num_ctx", contextSize,
+                        "temperature", temperature,
+                        "num_thread", 10,  // Upped for M4
+                        "num_gpu", 1,
+                        "num_predict", 2048  // Cap output length
+                    )
+                );
             
             log.debug("Sending request to Ollama...");
             
-            Map<String, Object> response = webClient.post()
-                    .uri("/api/generate")
-                    .bodyValue(requestBody)
-                    .retrieve()
-                    .bodyToMono(Map.class)
-                    .timeout(timeout)
-                    .block();
-            
-            return (String) response.get("response");
+         // Handle streaming response
+            StringBuilder streamedResponse = new StringBuilder();
+            webClient.post()
+                .uri("/api/generate")
+                .bodyValue(requestBody)
+                .retrieve()
+                .bodyToFlux(Map.class)  // Flux for streaming
+                .timeout(timeout)
+                .doOnNext(resp -> {
+                    if (resp.containsKey("response")) {
+                        streamedResponse.append((String) resp.get("response"));
+                    }
+                })
+                .doOnError(e -> log.error("Stream error", e))
+                .blockLast();  // Wait for completion
+
+            return streamedResponse.toString();
             
         } catch (Exception e) {
             log.error("Ollama API call failed", e);

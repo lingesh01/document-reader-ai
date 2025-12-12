@@ -99,11 +99,13 @@ public class ProductionPdfService {
                 // Native text is good enough
                 log.info("✓ Using native text extraction");
                 return nativeResult;
-            } else if (ocrAvailable && quality.level == QualityLevel.LOW) {
+//            } else if (ocrAvailable && quality.level == QualityLevel.LOW) {
+            } else if (false) { 
                 // Need OCR
                 log.info("→ Switching to OCR extraction (image-based PDF detected)");
                 return extractWithOCR(document, filePath, nativeResult);
-            } else {
+            }
+            else {
                 // OCR not available
                 log.warn("⚠️ Poor text quality but OCR not available");
                 nativeResult.addWarning("Document may be image-based. Install Tesseract for OCR: brew install tesseract");
